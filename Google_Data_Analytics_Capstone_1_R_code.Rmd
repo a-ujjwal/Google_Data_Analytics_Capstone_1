@@ -1,0 +1,353 @@
+---
+title: "Cyclistic Bike Sharing"
+author: "A. Ujjwal"
+date: '2022-07-26'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scenario
+
+You are a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company's future success depends on maximizing the number of annual memberships. Therefore, your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, your team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve your recommendations, so they must be backed up with compelling data insights and professional data visualizations.
+
+With a growing fleet of 5824 bicycles along with 692 docking stations, the fictional bike-share company was founded in 2016, and has a wide user base, grouped as:
+
+-   Casual : customers who purchase single-ride or full-day passes
+-   Members : customers who purchase annual memberships
+
+## Objectives
+
+As per Cyclistic's finance analysts, three questions will guide the future marketing programs:
+
+1.  How do annual members and casual riders use Cyclistic bikes differently?
+2.  Why would casual riders buy Cyclistic annual memberships?
+3.  How can Cyclistic use digital media to influence casual riders to become members?
+
+## Preparing Data
+
+The data is stored on AWS cloud and is named correctly and easily downloadable. For this project, I have used data from the year 2021.
+
+Once downloaded, the data is extracted from the ZIP files and stored locally for further analysis on RStudio Desktop. As the data is large, neither spreadsheets nor RStudio Cloud were operable.
+
+Furthermore, the downloaded data is reliable, original, comprehensive, current and is cited by the company.
+
+### Processing Data
+
+Before starting with the analysis, the data needs to be in an orderly manner. In this step, the monthly data is integrated, followed by deleting the NA values, and then inserting a few calculated fields in the original, integrated data frame.
+
+### Loading the Required libraries
+
+The 'tidyverse' package comprises of 8 smaller packages like dplyr, readr, ggplot2, purrr, tibble, tidyr, stringr and forcats. The 'tidyverse' package is a one stop solution for all analytics operations in R.
+
+The lubridate library is used to work with dates in R, whereas the janitor library has functions that help in cleaning the data.
+
+```{r Tidyverse}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+```
+
+### Loading the monthly datasets
+
+The monthly datasets are loaded/accessesed and renamed for better usability during analysis.
+
+```{r Loading data}
+jan_2021<-read_csv( "data-csv/202101-divvy-tripdata.csv" )
+feb_2021<-read_csv( "data-csv/202102-divvy-tripdata.csv" )
+mar_2021<-read_csv( "data-csv/202103-divvy-tripdata.csv" )
+apr_2021<-read_csv( "data-csv/202104-divvy-tripdata.csv" )
+may_2021<-read_csv( "data-csv/202105-divvy-tripdata.csv" )
+jun_2021<-read_csv( "data-csv/202106-divvy-tripdata.csv" )
+jul_2021<-read_csv( "data-csv/202107-divvy-tripdata.csv" )
+aug_2021<-read_csv( "data-csv/202108-divvy-tripdata.csv" )
+sep_2021<-read_csv( "data-csv/202109-divvy-tripdata.csv" )
+oct_2021<-read_csv( "data-csv/202110-divvy-tripdata.csv" )
+nov_2021<-read_csv( "data-csv/202111-divvy-tripdata.csv" )
+dec_2021<-read_csv( "data-csv/202112-divvy-tripdata.csv" )
+
+
+```
+
+### Compare the monthly dataframes for congruency
+
+Since the data frames have been segregated by month, it would be a good practice to check and compare all the data frames for congruency before proceeding further to merge the data.
+
+```{r Compare dataframes}
+compare_df_cols (jan_2021, feb_2021, mar_2021, apr_2021, may_2021, jun_2021, jul_2021, aug_2021, sep_2021, oct_2021, nov_2021, dec_2021)
+```
+
+From this step, it's clear that all the corresponding columns from the monthly data frames have the same name and data types. We're good to go!
+
+### Merging the data frames
+
+Let's merge the data frames to proceed further with the analysis.
+
+```{r Merge}
+all_trips<- rbind(jan_2021, feb_2021, mar_2021, apr_2021, may_2021, jun_2021, jul_2021, aug_2021, sep_2021, oct_2021, nov_2021, dec_2021)                              
+```
+
+When we check the structure of the new, integrated data frame, we observe that the monthly data frames have been successfully bound. We can also see that some columns have NA values.
+
+```{r Structure of new data frame}
+str(all_trips)
+```
+
+Before proceeding further, we will delete the NA values. While we are at it, we should also delete the month-wise data frames to clear system memory.
+
+```{r Remove NAs}
+all_trips<- drop_na(all_trips) # Removes all NA values from the data frame "all_trips"
+
+rm(jan_2021, feb_2021, mar_2021, apr_2021, may_2021, jun_2021, jul_2021, aug_2021, sep_2021, oct_2021, nov_2021, dec_2021) # Removes all surplus data frames
+```
+
+### Inserting the Calculated Fields in the data frame
+
+Before we start analyzing, we have to calculate the duration of each ride. TO do so, we need to calculate the difference between the end and start time of each ride. We also need to find out which day of the week a particular ride took place on. While we are at it, let's add a new field Month. This field will be useful in our analysis.
+
+```{r Calculated Fields}
+all_trips<- mutate( all_trips, trip_duration= round(difftime( all_trips$ended_at, all_trips$started_at, units = 'mins' ), 3)) %>%
+  mutate( Weekday= weekdays(all_trips$started_at), Month=month.abb[month(all_trips$started_at)]) 
+```
+
+We will now check the range of the newly calculated field 'trip_duration'. By doing this, we can find out if there is any bad data.
+
+```{r Range of trip_duration}
+range(all_trips$trip_duration)
+```
+
+As we see, the minimum time is -3354 seconds. To remove this bad data, we use the following code:
+
+```{r Remove negative time}
+all_trips<- all_trips[all_trips$trip_duration>0, ]
+```
+
+Before moving on to the next step, we should arrange the data in ascending order as per the starting date.
+
+```{r arrange date in ascending order}
+all_trips<- arrange(all_trips, all_trips$started_at)
+```
+
+### Descriptive Analysis
+
+In this step, we conduct a descriptive analysis on the cleaned data. We will now dive deep into what story the data is telling us.
+
+-   Average trip duration
+
+```{r mean trip_duration}
+mean(all_trips$trip_duration)
+```
+
+-   Median of trip duration
+
+```{r median trip_duration}
+median(all_trips$trip_duration)
+```
+
+-   Maximum trip duration
+
+```{r max trip_duration}
+max(all_trips$trip_duration)
+```
+
+-   Minimum trip duration
+
+```{r min trip_duration}
+min(all_trips$trip_duration)
+```
+
+Now, let's find out how the rides of casual riders differ from the members. We will again find the mean, median, maximum and minimum trip duration, but this time, we will group them by the riders' membership types, namely casual and member.
+
+-   Average of trip duration
+
+```{r average by membership type}
+mean_by_membership<- aggregate(all_trips$trip_duration~all_trips$member_casual, FUN=mean)
+colnames(mean_by_membership)<- c("Membership Type", "Average Trip Duration")
+mean_by_membership
+```
+
+-   Median of trip duration
+
+```{r Median by membership type}
+median_by_membership<-aggregate(all_trips$trip_duration~all_trips$member_casual, FUN=median)
+colnames(median_by_membership)<- c("Membership Type", "Median of Trip Duration")
+median_by_membership
+```
+
+-   Maximum trip duration
+
+```{r max trip duration by membership type}
+max_by_membership<-aggregate(all_trips$trip_duration~all_trips$member_casual, FUN=max)
+colnames(max_by_membership)<- c("Membership Type", "Maximum Duration")
+max_by_membership
+```
+
+-   Minimum trip duration
+
+```{r min trip duration by membership type}
+min_by_membership<-aggregate(all_trips$trip_duration~all_trips$member_casual, FUN=min)
+colnames(min_by_membership)<- c("Mebership Type", "Minimum Trip Duration")
+min_by_membership
+```
+
+## Exporting the cleaned data frame
+
+The data has been cleaned and is ready for further analysis. The cleaned data set is ready to be exported for further analysis.
+
+```{r Export}
+write.csv( all_trips,"C:/Users/Ayushya Ujjwal/Desktop/all_trips.csv")
+## Visualizing the findings
+```
+
+## VISUALIZATION
+
+```{r total trips pie chart, echo=FALSE}
+all_trips %>% 
+  group_by(member_casual, nrow(all_trips)) %>% 
+  summarise(number_of_trips=n()) %>% 
+  ggplot(aes(x=nrow(all_trips), y=number_of_trips, fill=member_casual))+
+  geom_col( position="stack", width=0.5)+
+  theme_void()+
+  coord_polar(theta="y")+
+  ggtitle("Rider Distribution by Membership")+
+  scale_y_continuous(labels = scales::percent) +
+  geom_text(aes(label = paste0(round(number_of_trips/nrow(all_trips)*100, 2),"%")),   position = position_stack(vjust = 0.5), size = 4)+
+  theme(legend.position= "bottom")+
+  scale_fill_discrete(name='Membership Type')
+  
+```
+
+Let's take a look at the most popular bike type.
+
+```{r most popular bike type, echo=FALSE}
+all_trips %>% 
+  group_by(rideable_type) %>% 
+  summarise(number_of_trips=n()) %>% 
+  ggplot(aes(x=rideable_type, y=number_of_trips, fill=rideable_type))+
+  geom_col(width = ) +
+  labs(title = "Most Popular Bike Type", x= "Bike Type", y= "Total Trips")+
+  scale_y_continuous(labels = scales::comma)+
+  scale_fill_discrete(name='Type of Bike')+
+  geom_text(aes(label = scales::comma(number_of_trips) ), vjust = 0.5, hjust= 1, colour = "black")+
+  coord_flip()+
+  scale_fill_brewer(palette =  "Set1")+
+  theme(legend.position="none")
+
+```
+
+```{r avg ride duration by membership, echo=FALSE}
+all_trips %>% 
+  group_by(member_casual) %>% 
+  summarise(Average_Ride_Duration=round(mean(trip_duration),2)) %>% 
+  ggplot(aes(x=member_casual, y=Average_Ride_Duration, fill=member_casual))+
+  geom_col(width = 0.7)+
+  ggtitle("Average Ride Duration by Membership Type")+
+  xlab("Membership Type")+
+  ylab("Average Ride Duration (in min)")+
+  scale_fill_discrete(name='Membership Type')+
+  geom_text(aes(label = Average_Ride_Duration), vjust = 1.5, colour = "black")
+
+```
+
+```{r rides in a month by membership type, echo=FALSE}
+all_trips_v2<-all_trips
+all_trips_v2$Month<-factor(all_trips_v2$Month, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+all_trips_v2 %>% 
+  group_by(member_casual, Month) %>% 
+  summarise(number_of_trips=n()) %>% 
+  ggplot(aes(x=Month, y=number_of_trips, fill=member_casual))+
+  geom_col(position = "dodge")+
+  ggtitle("Rides Per month by Membership Type")+
+  xlab("Month")+
+  ylab("Total Trips")+
+  theme(axis.text.x = element_text(angle = 25))+
+  scale_y_continuous(labels = scales::comma)+
+  scale_fill_discrete(name='Membership Type')
+
+```
+
+```{r average monthly ride duration by membership, echo=FALSE}
+all_trips_v2 %>% 
+  group_by(member_casual, Month) %>% 
+  summarise(average_rides= round(mean(trip_duration), 0)) %>% 
+  ggplot(aes(x=Month, y=average_rides, fill=member_casual))+
+  geom_col(width = 0.75)+
+  ggtitle("Average Monthly Ride duration by Membership Type")+
+  xlab("Month")+
+  ylab("Average Rides (in min)")+
+  theme(axis.text.x = element_text(angle = 25))+
+  scale_fill_discrete(name='Membership Type')+
+  geom_text(aes(label = average_rides), vjust = 1.5, colour = "black") 
+
+```
+
+```{r total daily rides by membership, echo=FALSE}
+ all_trips %>% 
+  group_by(member_casual, Weekday) %>%     #groups by membership type and weekday 
+  summarise(number_of_rides=n()) %>%     #to calculate average trip duration 
+  ggplot(aes(x=Weekday, y=number_of_rides, fill=member_casual))+
+  geom_col(position = "stack")+
+  ggtitle("Total Daily Rides by Membership Type")+
+  xlab("Weekday")+
+  ylab("Total Rides")+
+  scale_y_continuous(labels = scales::comma)+
+  scale_fill_discrete(name='Membership Type')
+
+```
+
+Also, lets look at how the average ride duration fares throughout the week for both the groups.
+
+```{r daily average trip duration by membership}
+all_trips %>% 
+  group_by(member_casual, Weekday) %>% 
+  summarise(avg_ride_duration=round(mean(trip_duration), 2)) %>% 
+  ggplot(aes(x=Weekday, y=avg_ride_duration, fill=member_casual))+
+  geom_col()+
+  ggtitle("Daily Average Trip Duration by Membership Type")+
+  xlab("Weekdays")+
+  ylab("Average Rides (in min)")+
+  scale_fill_discrete(name='Membership Type')+
+  geom_text(aes(label = avg_ride_duration), vjust = 1.5, colour = "black")
+
+```
+
+Let's find out which stations are the most and preferred by the users.
+
+```{r top 5 stations, echo=FALSE}
+
+all_trips %>% 
+  group_by(member_casual, start_station_name) %>% 
+  summarise(number_of_trips=n()) %>% 
+  arrange(desc(number_of_trips)) %>% 
+  slice(1:5) %>% 
+  ggplot(aes(x=reorder(start_station_name, -number_of_trips), y=number_of_trips, fill= member_casual))+
+  geom_col()+
+  ggtitle("Top 5 Start Stations")+
+  xlab("Station Name")+
+  ylab("Total Rides")+
+  theme(axis.text.x = element_text(angle = 30))+
+  scale_fill_discrete(name='Membership Type')+
+  geom_text(aes(label = number_of_trips), vjust = 1.5, colour = "black")
+
+```
+
+```{r}
+all_trips %>% 
+  group_by(member_casual, end_station_name) %>% 
+  summarise(number_of_trips=n()) %>% 
+  arrange(desc(number_of_trips)) %>% 
+  slice(1:5) %>% 
+  ggplot(aes(x=reorder(end_station_name, -number_of_trips), y=number_of_trips, fill= member_casual))+
+  geom_col()+
+  ggtitle("Top 5 End Stations")+
+  xlab("Station Name")+
+  ylab("Total Rides")+
+  theme(axis.text.x = element_text(angle = 30))+
+  scale_fill_discrete(name='Membership Type')+
+  geom_text(aes(label = number_of_trips), vjust = 1.5, colour = "black")
+
+```
+
+
