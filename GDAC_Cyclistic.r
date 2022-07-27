@@ -1,3 +1,7 @@
+# This code will only run in RStudio's Cloud or Desktop version. 
+# Before running the code, make sure you have the right datasets, and their paths have been correctly entered during the reading of the file.
+
+
 # STEP 1: Load the required libraries
 library(tidyverse) 
 library(lubridate) # to work with dates and times
