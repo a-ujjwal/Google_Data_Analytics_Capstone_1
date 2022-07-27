@@ -1,4 +1,4 @@
-# Google_Data_Analytics_Capstone_1
+# Google Data Analytics Capstone 1: Cyclistic Bike Share
 
 This is a Capstone project, completed as a part of the Google Data Analytics Certification. Here, I have analyzed the ride trends in the customer's behaviour of Cyclistic Bike Share, a fictional company, using R and RStudio Desktop. Seeing the large size of the individual datasets, working on Spreadsheets for initial cleaning was not possible and hence, I opted for RStudio Desktop. Using RStudio Desktop, I was able to perform cleaning operations and manipulations alongwith creating vizualisations on a single platform.
 
@@ -34,6 +34,12 @@ Furthermore, the downloaded data is reliable, original, comprehensive, current a
 Before starting with the analysis, the data needs to be in an orderly manner. In this step, the monthly data is integrated, followed by deleting the NA values, and then inserting a few calculated fields in the original, integrated data frame.
 
 This file with the R code can be found in the repository, named as [GDAC_Cyclistic.r](https://github.com/a-ujjwal/Google_Data_Analytics_Capstone_1/blob/main/GDAC_Cyclistic.r) .
+
+### Dashboard
+[Click here](https://github.com/a-ujjwal/Google_Data_Analytics_Capstone_1/blob/main/Dashboard.pdf) if you want to take a look at the dashboard.
+
+### Presentation
+I have also created a presentation of my findings from this project. This presentation also includes some recommndations to solve the business problem. [Click here!](https://github.com/a-ujjwal/Google_Data_Analytics_Capstone_1/blob/main/Dashboard.pdf)
 
 
 
